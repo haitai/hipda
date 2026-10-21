@@ -29,6 +29,7 @@ import androidx.appcompat.widget.AppCompatTextView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.ActivityOptionsCompat;
 import androidx.documentfile.provider.DocumentFile;
+import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -46,6 +47,8 @@ import net.jejer.hipda.ui.SettingActivity;
 import net.jejer.hipda.ui.adapter.BaseRvAdapter;
 import net.jejer.hipda.ui.adapter.RecyclerItemClickListener;
 import net.jejer.hipda.ui.widget.HiProgressDialog;
+import net.jejer.hipda.utils.BackgroundHelper;
+import net.jejer.hipda.utils.ColorHelper;
 import net.jejer.hipda.utils.HiUtils;
 import net.jejer.hipda.utils.Logger;
 import net.jejer.hipda.utils.UIUtils;
@@ -82,6 +85,7 @@ public class SettingNestedFragment extends BaseSettingFragment {
     private Preference ringtonePreference;
     private Preference mBlackListPreference;
     private ActivityResultLauncher<String> mGetFontFile;
+    private ActivityResultLauncher<String> mGetBackgroundImage;
     private Drawable mCheckDrawable;
 
     @Override
@@ -95,6 +99,15 @@ public class SettingNestedFragment extends BaseSettingFragment {
                     @Override
                     public void onActivityResult(Uri uri) {
                         importFontFile(uri);
+                    }
+                });
+
+        mGetBackgroundImage = registerForActivityResult(
+                new ActivityResultContracts.GetContent(),
+                new ActivityResultCallback<Uri>() {
+                    @Override
+                    public void onActivityResult(Uri uri) {
+                        importBackgroundImage(uri);
                     }
                 });
 
@@ -183,6 +196,47 @@ public class SettingNestedFragment extends BaseSettingFragment {
                         return true;
                     }
                 });
+
+                final Preference backgroundImagePreference = findPreference(HiSettingsHelper.PERF_PICK_BACKGROUND_IMAGE);
+                backgroundImagePreference.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                    @Override
+                    public boolean onPreferenceClick(Preference preference) {
+                        mGetBackgroundImage.launch("image/*");
+                        return true;
+                    }
+                });
+                updateBackgroundImageSummary(backgroundImagePreference);
+
+                final Preference clearBackgroundPreference = findPreference(HiSettingsHelper.PERF_CLEAR_BACKGROUND_IMAGE);
+                clearBackgroundPreference.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                    @Override
+                    public boolean onPreferenceClick(Preference preference) {
+                        clearBackgroundImage();
+                        return true;
+                    }
+                });
+                clearBackgroundPreference.setVisible(BackgroundHelper.isEnabled());
+
+                final ListPreference backgroundMaskPreference = findPreference(HiSettingsHelper.PERF_BACKGROUND_MASK);
+                backgroundMaskPreference.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+                    @Override
+                    public boolean onPreferenceChange(Preference preference, Object newValue) {
+                        if (newValue instanceof String) {
+                            try {
+                                int mask = Integer.parseInt((String) newValue);
+                                HiSettingsHelper.getInstance().setBackgroundMask(mask);
+                                backgroundMaskPreference.setSummary(mask + "%");
+                            } catch (NumberFormatException e) {
+                                Logger.e(e);
+                                return false;
+                            }
+                        }
+                        //refresh the background of the current screen
+                        applyBackgroundToCurrentScreen();
+                        return true;
+                    }
+                });
+                updateBackgroundMaskSummary(backgroundMaskPreference);
                 break;
 
             case SCREEN_NOTIFICATION:
@@ -546,6 +600,89 @@ public class SettingNestedFragment extends BaseSettingFragment {
             UIUtils.errorSnack(getView(), "无法导入字体", e.getMessage());
             Logger.e(e);
         }
+    }
+
+    private void importBackgroundImage(Uri uri) {
+        if (uri == null)
+            return;
+
+        //read the uri right away, the permission granted by the picker is short lived
+        final File temp = BackgroundHelper.copyToTempFile(uri);
+        if (temp == null) {
+            UIUtils.errorSnack(getView(), getString(R.string.background_image_import_failed), null);
+            return;
+        }
+
+        mProgressDialog = HiProgressDialog.show(getActivity(), "正在处理...");
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper());
+        executor.execute(() -> {
+            String name = null;
+            try {
+                name = BackgroundHelper.importFromFile(temp);
+            } catch (Exception e) {
+                Logger.e(e);
+            } finally {
+                executor.shutdown();
+            }
+            final String fileName = name;
+            handler.post(() -> {
+                if (mProgressDialog != null) {
+                    if (fileName != null) {
+                        HiSettingsHelper.getInstance().setBackgroundImage(fileName);
+                        BackgroundHelper.deleteUnusedImages();
+                        mProgressDialog.dismiss(getString(R.string.background_image_set));
+                        updateBackgroundImageSummary(findPreference(HiSettingsHelper.PERF_PICK_BACKGROUND_IMAGE));
+                        Preference clearPreference = findPreference(HiSettingsHelper.PERF_CLEAR_BACKGROUND_IMAGE);
+                        if (clearPreference != null)
+                            clearPreference.setVisible(true);
+                        applyBackgroundToCurrentScreen();
+                    } else {
+                        mProgressDialog.dismissError(getString(R.string.background_image_import_failed));
+                    }
+                }
+            });
+        });
+    }
+
+    private void clearBackgroundImage() {
+        BackgroundHelper.clear();
+        HiSettingsHelper.getInstance().setBackgroundImage("");
+        BackgroundHelper.deleteUnusedImages();
+        UIUtils.toast(getString(R.string.background_image_removed));
+        updateBackgroundImageSummary(findPreference(HiSettingsHelper.PERF_PICK_BACKGROUND_IMAGE));
+        Preference clearPreference = findPreference(HiSettingsHelper.PERF_CLEAR_BACKGROUND_IMAGE);
+        if (clearPreference != null)
+            clearPreference.setVisible(false);
+        applyBackgroundToCurrentScreen();
+    }
+
+    private void updateBackgroundImageSummary(Preference preference) {
+        if (preference == null)
+            return;
+        if (BackgroundHelper.isEnabled())
+            preference.setSummary(getString(R.string.pref_summary_background_image_set));
+        else
+            preference.setSummary(getString(R.string.pref_summary_background_image));
+    }
+
+    private void updateBackgroundMaskSummary(Preference preference) {
+        if (preference == null)
+            return;
+        int mask = HiSettingsHelper.getInstance().getBackgroundMask();
+        preference.setSummary(mask + "%");
+    }
+
+    /**
+     * Apply the background image to the screen currently displayed, so that the
+     * effect of a change is visible without leaving the settings.
+     */
+    private void applyBackgroundToCurrentScreen() {
+        View view = getView();
+        if (view == null)
+            return;
+        if (!BackgroundHelper.applyTo(view, getActivity()))
+            view.setBackgroundColor(ColorHelper.getWindowBackgroundColor(getActivity()));
     }
 
     private class FontsAdapter extends BaseRvAdapter<File> {

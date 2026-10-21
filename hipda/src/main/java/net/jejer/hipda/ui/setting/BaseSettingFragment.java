@@ -17,6 +17,7 @@ import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.SwitchPreference;
 
+import net.jejer.hipda.utils.BackgroundHelper;
 import net.jejer.hipda.utils.ColorHelper;
 import net.jejer.hipda.utils.Utils;
 
@@ -37,8 +38,10 @@ public class BaseSettingFragment extends PreferenceFragmentCompat {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = super.onCreateView(inflater, container, savedInstanceState);
-        if (view != null)
-            view.setBackgroundColor(ColorHelper.getWindowBackgroundColor(getActivity()));
+        if (view != null) {
+            if (!BackgroundHelper.applyTo(view, getActivity()))
+                view.setBackgroundColor(ColorHelper.getWindowBackgroundColor(getActivity()));
+        }
         return view;
     }
 

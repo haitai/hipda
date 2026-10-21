@@ -32,6 +32,27 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory android:title="@string/pref_category_background">
+
+        <Preference
+            android:key="PERF_PICK_BACKGROUND_IMAGE"
+            android:persistent="false"
+            android:title="@string/pref_title_background_image" />
+
+        <ListPreference
+            android:defaultValue="60"
+            android:entries="@array/pref_background_mask_titles"
+            android:entryValues="@array/pref_background_mask_values"
+            android:key="PERF_BACKGROUND_MASK"
+            android:title="@string/pref_title_background_mask" />
+
+        <Preference
+            android:key="PERF_CLEAR_BACKGROUND_IMAGE"
+            android:persistent="false"
+            android:title="@string/pref_title_background_remove" />
+
+    </PreferenceCategory>
+
     <PreferenceCategory android:title="@string/pref_category_other">HiSett
         <ListPreference
             android:defaultValue="2"

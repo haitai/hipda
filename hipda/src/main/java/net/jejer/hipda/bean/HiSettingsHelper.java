@@ -94,6 +94,10 @@ public class HiSettingsHelper {
     public static final String PERF_MAX_UPLOAD_FILE_SIZE = "PERF_MAX_UPLOAD_FILE_SIZE";
     public static final String PERF_BLACKLIST = "PERF_BLACKLIST";
     public static final String PERF_BLACKLIST_SYNC_TIME = "PERF_BLACKLIST_SYNC_TIME";
+    public static final String PERF_BACKGROUND_IMAGE = "PERF_BACKGROUND_IMAGE";
+    public static final String PERF_BACKGROUND_MASK = "PERF_BACKGROUND_MASK";
+    public static final String PERF_PICK_BACKGROUND_IMAGE = "PERF_PICK_BACKGROUND_IMAGE";
+    public static final String PERF_CLEAR_BACKGROUND_IMAGE = "PERF_CLEAR_BACKGROUND_IMAGE";
 
     public static final String THEME_MODE_AUTO = "auto";
     public static final String THEME_MODE_LIGHT = "light";
@@ -101,6 +105,7 @@ public class HiSettingsHelper {
     public static final String THEME_BLACK = "black";
     public static final String THEME_WHITE = "white";
     public static final int MAX_TAIL_TEXT_LENGTH = 12;
+    public static final int DEFAULT_BACKGROUND_MASK = 60;
 
     public static final int SMALL_IMAGE_SIZE = 500 * 1024; //500K
     public static final String IMAGE_POLICY_NONE = "none";
@@ -638,6 +643,32 @@ public class HiSettingsHelper {
         mFont = font;
         SharedPreferences.Editor editor = mSharedPref.edit();
         editor.putString(PERF_FONT, font).apply();
+    }
+
+    /**
+     * @return the name of the background image file, empty if none is set.
+     */
+    public String getBackgroundImage() {
+        return getStringValue(PERF_BACKGROUND_IMAGE, "");
+    }
+
+    public void setBackgroundImage(String name) {
+        setStringValue(PERF_BACKGROUND_IMAGE, name == null ? "" : name);
+    }
+
+    /**
+     * @return the strength (0-100) of the scrim drawn on top of the image.
+     */
+    public int getBackgroundMask() {
+        try {
+            return Integer.parseInt(getStringValue(PERF_BACKGROUND_MASK, String.valueOf(DEFAULT_BACKGROUND_MASK)));
+        } catch (Exception e) {
+            return DEFAULT_BACKGROUND_MASK;
+        }
+    }
+
+    public void setBackgroundMask(int mask) {
+        setStringValue(PERF_BACKGROUND_MASK, String.valueOf(mask));
     }
 
     public boolean isNavBarColored() {

@@ -17,6 +17,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.ActionBar;
@@ -40,6 +41,7 @@ import net.jejer.hipda.R;
 import net.jejer.hipda.async.PostSmsAsyncTask;
 import net.jejer.hipda.glide.GlideHelper;
 import net.jejer.hipda.ui.widget.OnSingleClickListener;
+import net.jejer.hipda.utils.BackgroundHelper;
 import net.jejer.hipda.utils.UIUtils;
 import net.jejer.hipda.utils.Utils;
 
@@ -121,6 +123,12 @@ public abstract class BaseFragment extends Fragment {
                 setupFab();
             }
         }
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        BackgroundHelper.applyTo(view, getActivity());
     }
 
     @Override

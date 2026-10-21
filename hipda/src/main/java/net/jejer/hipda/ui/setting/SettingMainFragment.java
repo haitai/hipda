@@ -31,6 +31,8 @@ public class SettingMainFragment extends BaseSettingFragment {
     private List<Integer> mForums;
     private Set<String> mFreqMenus;
     private String mFont;
+    private String mBackgroundImage;
+    private int mBackgroundMask;
     static boolean mCacheCleared;
     private String mForumServer;
     private boolean mCircleAvatar;
@@ -73,6 +75,8 @@ public class SettingMainFragment extends BaseSettingFragment {
         mForums = HiSettingsHelper.getInstance().getForums();
         mFreqMenus = HiSettingsHelper.getInstance().getFreqMenus();
         mFont = HiSettingsHelper.getInstance().getFont();
+        mBackgroundImage = HiSettingsHelper.getInstance().getBackgroundImage();
+        mBackgroundMask = HiSettingsHelper.getInstance().getBackgroundMask();
         mForumServer = HiSettingsHelper.getInstance().getForumServer();
         mCircleAvatar = HiSettingsHelper.getInstance().isCircleAvatar();
         mNotiTaskEnabled = HiSettingsHelper.getInstance().isNotiTaskEnabled();
@@ -106,7 +110,9 @@ public class SettingMainFragment extends BaseSettingFragment {
         } else if (HiSettingsHelper.getInstance().getScreenOrietation() != mScreenOrietation
                 || !HiSettingsHelper.getInstance().getForums().equals(mForums)
                 || !HiSettingsHelper.getInstance().getFreqMenus().equals(mFreqMenus)
-                || !HiSettingsHelper.getInstance().getForumServer().equals(mForumServer)) {
+                || !HiSettingsHelper.getInstance().getForumServer().equals(mForumServer)
+                || !HiSettingsHelper.getInstance().getBackgroundImage().equals(mBackgroundImage)
+                || HiSettingsHelper.getInstance().getBackgroundMask() != mBackgroundMask) {
             HiApplication.setSettingStatus(HiApplication.RECREATE);
         } else {
             HiApplication.setSettingStatus(HiApplication.RELOAD);
