@@ -83,7 +83,7 @@ public class BaseSettingFragment extends PreferenceFragmentCompat {
                         sb.append(entries[index]);
                     }
                 }
-                preference.setSummary(sb.toString());
+                setSafeSummary(preference, sb.toString());
             } else if (preference instanceof ListPreference) {
                 // For list preferences, look up the correct display value in
                 // the preference's 'entries' list.
@@ -91,18 +91,44 @@ public class BaseSettingFragment extends PreferenceFragmentCompat {
                 int index = listPreference.findIndexOfValue(stringValue);
 
                 // Set the summary to reflect the new value.
-                preference
-                        .setSummary(index >= 0 ? listPreference.getEntries()[index]
+                setSafeSummary(preference,
+                        index >= 0 ? listPreference.getEntries()[index]
                                 : null);
             } else {
                 // For all other preferences, set the summary to the value's
                 // simple string representation.
-                preference.setSummary(TextUtils.isEmpty(stringValue) ? "无" : stringValue);
+                setSafeSummary(preference, TextUtils.isEmpty(stringValue) ? "无" : stringValue);
             }
 
             return true;
         }
     };
+
+    /**
+     * Set the summary of a preference in a way that is safe for ListPreference.
+     * <p>
+     * ListPreference keeps the text given to setSummary() and, when the summary is
+     * read, passes it to {@link String#format(String, Object...)}. A summary
+     * containing a half width percent sign is therefore parsed as a format
+     * marker and throws {@link java.util.UnknownFormatConversionException},
+     * which crashes the settings screen. Escaping the percent sign keeps the
+     * text intact while making it a valid format string.
+     *
+     * @param preference the preference to update
+     * @param summary    the text to display, may be null
+     */
+    protected static void setSafeSummary(Preference preference, CharSequence summary) {
+        if (preference == null)
+            return;
+        if (summary == null) {
+            preference.setSummary(null);
+            return;
+        }
+        if (preference instanceof ListPreference)
+            preference.setSummary(summary.toString().replace("%", "%%"));
+        else
+            preference.setSummary(summary);
+    }
 
     protected static void bindPreferenceSummaryToValue(Preference preference) {
         // Set the listener to watch for value changes.

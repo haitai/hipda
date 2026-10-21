@@ -253,6 +253,11 @@
     <string name="background_image_set">背景图片已更新</string>
     <string name="background_image_removed">背景图片已移除</string>
     <string name="background_image_import_failed">无法导入背景图片</string>
+    <!-- 注意：这里必须用全角百分号「％」。
+         androidx.preference 的 ListPreference.getSummary() 会把 setSummary() 传入的字符串
+         当作格式串交给 String.format()，半角「%」后面没有转换符会抛
+         UnknownFormatConversionException 导致设置页崩溃。 -->
+    <string name="pref_summary_background_mask">遮罩浓度 %1$d％</string>
 
     <string-array name="pref_background_mask_titles">
         <item>无</item>

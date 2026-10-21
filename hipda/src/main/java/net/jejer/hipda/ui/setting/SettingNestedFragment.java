@@ -225,7 +225,6 @@ public class SettingNestedFragment extends BaseSettingFragment {
                             try {
                                 int mask = Integer.parseInt((String) newValue);
                                 HiSettingsHelper.getInstance().setBackgroundMask(mask);
-                                backgroundMaskPreference.setSummary(mask + "%");
                             } catch (NumberFormatException e) {
                                 Logger.e(e);
                                 return false;
@@ -236,7 +235,17 @@ public class SettingNestedFragment extends BaseSettingFragment {
                         return true;
                     }
                 });
-                updateBackgroundMaskSummary(backgroundMaskPreference);
+                // 用 SummaryProvider 提供 summary，而不是 setSummary()。
+                // ListPreference.setSummary() 写入的字符串会被 getSummary() 当成格式串交给
+                // String.format()，其中出现半角「%」会抛 UnknownFormatConversionException
+                // 导致设置页一打开就崩溃。SummaryProvider 则完全绕开这条格式化路径。
+                backgroundMaskPreference.setSummaryProvider(new Preference.SummaryProvider<ListPreference>() {
+                    @Override
+                    public CharSequence provideSummary(ListPreference preference) {
+                        int mask = HiSettingsHelper.getInstance().getBackgroundMask();
+                        return getString(R.string.pref_summary_background_mask, mask);
+                    }
+                });
                 break;
 
             case SCREEN_NOTIFICATION:
@@ -661,16 +670,9 @@ public class SettingNestedFragment extends BaseSettingFragment {
         if (preference == null)
             return;
         if (BackgroundHelper.isEnabled())
-            preference.setSummary(getString(R.string.pref_summary_background_image_set));
+            setSafeSummary(preference, getString(R.string.pref_summary_background_image_set));
         else
-            preference.setSummary(getString(R.string.pref_summary_background_image));
-    }
-
-    private void updateBackgroundMaskSummary(Preference preference) {
-        if (preference == null)
-            return;
-        int mask = HiSettingsHelper.getInstance().getBackgroundMask();
-        preference.setSummary(mask + "%");
+            setSafeSummary(preference, getString(R.string.pref_summary_background_image));
     }
 
     /**
